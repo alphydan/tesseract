@@ -215,7 +215,7 @@ function keyTyped() {
 }
 
 function setup() {
-    createCanvas(windowWidth-100, windowHeight+7000);
+    createCanvas(windowWidth-100, windowHeight+8000);
     textFont(fira);
 
     drawGrid();
