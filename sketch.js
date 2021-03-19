@@ -21,74 +21,30 @@ let L1slider;
 let v1slider;
 let v2slider;
 
-function preload() { 
-  fira = loadFont('./fonts/FiraSans-Regular.otf');
-} 
+let tesseractList = [];
+let buttonList = [];
 
-function setup() {
-    createCanvas(windowWidth-100, windowHeight-10);
-    textFont(fira);
-
-    sliderWidth = '600px';
-    halfSliderWidth = '300px';
-    
-    // slider min, max, default, step
-    L1slider = createSlider(10, 200, 100, 10);
-    L1slider.position(50,10);
-    L1slider.style('width', sliderWidth);
-
-    v1sliderx = createSlider(-200, 200, 100, 10);
-    v1sliderx.position(50,50);
-    v1sliderx.style('width', halfSliderWidth);
-
-    v1slidery = createSlider(-200, 200, 100, 10);
-    v1slidery.position(400,50);
-    v1slidery.style('width', halfSliderWidth);
-
-    
-    v2sliderx = createSlider(-200, 200, 100, 10);
-    v2sliderx.position(50,90);
-    v2sliderx.style('width', halfSliderWidth);
-
-    v2slidery = createSlider(-200, 200, 100, 10);
-    v2slidery.position(400,90);
-    v2slidery.style('width', halfSliderWidth);
-
-
-    dropdown = createSelect(); 
-    // Position the dropdown menu 
-    dropdown.position(50,130); 
-    // Set options 
-    dropdown.option(1); 
-    dropdown.option(0.5); 
-    dropdown.option(2); 
-
+function preload() {
+    fira = loadFont('./fonts/FiraSans-Regular.otf');
 }
-   
 
-function draw() {
 
-    let sqR = {x: width/2, y: height/2};
-    let sq1L = L1slider.value();
-    lengthFactor = dropdown.value()
-    let sq2L = lengthFactor*L1slider.value();
-    let v1 = {x: -v1sliderx.value(), y: -v1slidery.value()}
-    let v2 = {x: -v2sliderx.value(), y: v2slidery.value()}
+function drawTesseract(position, len, trans3d, trans4d) {
+    const normalizedLen = 1 * len;
 
-    background(255);
     strokeWeight(sqStroke);
 
     // red cube
     stroke(255,116,92);
     fill(fillIntensity, 0, 0, fillOpacity);
-    drawCube(sqR.x, sqR.y, sq1L, v1);
+    drawCube(position.x, position.y, len, trans3d);
 
     // blue cube
     stroke(138, 145, 233);
     fill(0, 0, fillIntensity, fillOpacity);
     push();
-    translate(v2.x, v2.y);
-    drawCube(sqR.x, sqR.y, sq2L, v1);
+    translate(trans4d.x, trans4d.y);
+    drawCube(position.x, position.y, normalizedLen, trans3d);
     pop();
 
     // green lines
@@ -97,22 +53,13 @@ function draw() {
     stroke(77, 153, 77);
     stroke(97, 189, 148);
 
-    joinCubes(sqR.x, sqR.y, sq1L, sq2L, v1, v2);
 
+    joinCubes(position.x, position.y, len, normalizedLen, trans3d, trans4d);
     stroke(255);
     fill(0)
     textSize(16);
     textFont('Times New Roman');
-    let sliderLabelx = 720
-    text("CUBE Size", sliderLabelx , 20);
-    text("L = " + sq1L, sliderLabelx/2 , 15);
-    text("CUBE 3D Translation", sliderLabelx, 60);
-    text("x = " + v1.x, sliderLabelx/4, 58);
-    text("y = " + v1.y, 3*sliderLabelx/4, 58);
-    text("CUBE 4D Translation", sliderLabelx, 100);
-    text("x = " + v2.x, sliderLabelx/4, 96);
-    text("y = " + v2.y, 3*sliderLabelx/4, 96);
-    text("Ratio of cube sizes", 120, 150)
+
     // strategy:
     // try to determine left-most point
     // and right most point of tesseract and use that
@@ -120,12 +67,92 @@ function draw() {
     textFont(fira);
     stroke(0);
     fill(0);
-    textSize(abs(v1.x/4) + sq1L/2);
-    text("Tesseract", sqR.x - sq1L/1.8 ,
-	 sqR.y + 2*sq1L + abs(v1.y/2) + abs(v2.y/2));
-
-    
+    textSize(abs(trans3d.x/4) + len/2);
 }
+
+// https://stackoverflow.com/questions/3665115/how-to-create-a-file-in-memory-for-user-to-download-but-not-through-server
+function saveFile(filename, data) {
+    var blob = new Blob([data], {type: 'text/csv'});
+    if(window.navigator.msSaveOrOpenBlob) {
+        window.navigator.msSaveBlob(blob, filename);
+    }
+    else{
+        var elem = window.document.createElement('a');
+        elem.href = window.URL.createObjectURL(blob);
+        elem.download = filename;
+        document.body.appendChild(elem);
+        elem.click();
+        document.body.removeChild(elem);
+    }
+}
+
+function rand() {
+    return (Math.random() * 200) - 200;
+}
+
+const rows = 40;
+const cols = 5;
+
+function drawGrid() {
+    let start = {x: 600, y: 410};
+
+    const size = width / cols;
+    console.log("size: " + size);
+
+    scale(0.3);
+    for (let i = 0; i < rows; i++) {
+        for (let j = 0; j < cols; j++) {
+            const len = Math.random() * 200 + 10;
+            const t1 = {x: rand(), y: rand()};
+            const t2 = {x: rand(), y: rand()};
+            drawTesseract(start, len, t1,  t2);
+            tesseractList.push({'L': len, 'v1x': t1.x, 'v1y': t1.y, 'v2x': t2.x, 'v2y': t2.y});
+            drawRatingButtons({x: start.x - 100, y: start.y + 250}, tesseractList.length - 1);
+
+            start.x += 470;
+        }
+        start.y += 720;
+        start.x = 600;
+    }
+    drawSaveButton({x: start.x + 300, y: start.y + 300});
+}
+
+function drawRatingButtons(pos, tesseractId) {
+    const btns = [];
+    for (const rating of [1, 2, 3]) {
+        const btn = createButton(rating);
+        btns.push(btn);
+        btn.position(pos.x * 0.3, pos.y * 0.3);
+        btn.mousePressed(() => {
+            tesseractList[tesseractId]['rating'] = rating;
+            for (const tesseractButton of buttonList[tesseractId])
+                tesseractButton.attribute('disabled', '');
+
+        });
+        pos.x += 100;
+    }
+    buttonList.push(btns);
+}
+
+function drawSaveButton(pos) {
+    const btn = createButton('Save');
+    btn.position(pos.x * 0.3, pos.y * 0.3);
+    btn.mousePressed(() => {
+        // https://stackoverflow.com/questions/63481185/javascript-list-of-dictionariesjson-to-csv
+        const dictionaryKeys = Object.keys(tesseractList[0]);
+
+        const dictValuesAsCsv = tesseractList.map(dict => (
+            dictionaryKeys.map(key => dict[key]).join(',')
+        ));
+
+        const result = [dictionaryKeys.join(','), ...dictValuesAsCsv].join('\n');
+        saveFile('tesseracts.csv', result);
+    });
+}
+
+function draw() {
+}
+
 
 function drawCube(x,y,L,v1){
     // first square
@@ -139,11 +166,11 @@ function drawCube(x,y,L,v1){
     // join the lines
     line(x, y, x + v1.x, y + v1.y)
     line(x + L, y,
-	 x + v1.x + L, y + v1.y)
+        x + v1.x + L, y + v1.y)
     line(x, y + L,
-	 x + v1.x, y + v1.y + L)
+        x + v1.x, y + v1.y + L)
     line(x + L, y + L,
-	 x + v1.x + L, y + v1.y + L)
+        x + v1.x + L, y + v1.y + L)
 }
 
 function joinCubes(x,y, L1, L2, v1, v2){
@@ -151,13 +178,13 @@ function joinCubes(x,y, L1, L2, v1, v2){
     var lTrans = [0, L1]; // translation along square
     let cTrans = [[0, v1.x], [0, v1.y]]; // translation to other square in cube
     var iP = []; // initial points (red cube)
-    
+
     for (var i = 0; i < lTrans.length; i++) {
-	for (var k = 0; k < lTrans.length; k++) {
-	    for (var j = 0; j < cTrans.length; j++) {
-		iP.push({x: x+ lTrans[i] + cTrans[0][j],
-			 y:  y + lTrans[k] + cTrans[1][j]})			   	    }
-	}	
+        for (var k = 0; k < lTrans.length; k++) {
+            for (var j = 0; j < cTrans.length; j++) {
+                iP.push({x: x+ lTrans[i] + cTrans[0][j],
+                    y:  y + lTrans[k] + cTrans[1][j]})			   	    }
+        }
     }
 
     // final points (blue cube)
@@ -165,22 +192,29 @@ function joinCubes(x,y, L1, L2, v1, v2){
     var fP = [];
 
     for (var i = 0; i < lTrans.length; i++) {
-	for (var k = 0; k < lTrans.length; k++) {
-	    for (var j = 0; j < cTrans.length; j++) {
-		fP.push({x: x+ lTrans[i] + cTrans[0][j] + v2.x,
-			 y:  y + lTrans[k] + cTrans[1][j] + v2.y})			   	    }
-	}	
+        for (var k = 0; k < lTrans.length; k++) {
+            for (var j = 0; j < cTrans.length; j++) {
+                fP.push({x: x+ lTrans[i] + cTrans[0][j] + v2.x,
+                    y:  y + lTrans[k] + cTrans[1][j] + v2.y})			   	    }
+        }
     }
 
 // join red cube points and blue cube points
     for (var i = 0; i < iP.length; i++) {
-	line(iP[i].x, iP[i].y, fP[i].x, fP[i].y);
+        line(iP[i].x, iP[i].y, fP[i].x, fP[i].y);
     }
 }
 
 function keyTyped() {
-  if (key === 's') {
-    saveCanvas('mytesseract', 'png')
-  }
+    if (key === 's') {
+        saveCanvas('mytesseract', 'png')
+    }
 
+}
+
+function setup() {
+    createCanvas(windowWidth-100, windowHeight+7000);
+    textFont(fira);
+
+    drawGrid();
 }
