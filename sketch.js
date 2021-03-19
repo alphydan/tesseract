@@ -126,7 +126,9 @@ function drawRatingButtons(pos, tesseractId) {
         btn.mousePressed(() => {
             tesseractList[tesseractId]['rating'] = rating;
             for (const tesseractButton of buttonList[tesseractId])
-                tesseractButton.attribute('disabled', '');
+                tesseractButton.removeAttribute('disabled');
+
+            btn.attribute('disabled', '');
 
         });
         pos.x += 100;
