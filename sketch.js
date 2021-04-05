@@ -87,7 +87,7 @@ function saveFile(filename, data) {
 }
 
 function rand() {
-    return ((Math.random() * 200) - 200) / 10 * 10;
+    return ~~((Math.random() * 200) - 200);
 }
 
 const rows = 40;
